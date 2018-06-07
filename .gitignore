@@ -1,0 +1,55 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Ignore stuff controlled by cmake
+CMake*
+*.cmake
+!CMakeLists.txt
+/Makefile
+!/cmake/*.cmake
+
+# Project files
+.project
+.cproject
+.kdev4/
+*.kdev4
+*.kdev_include_paths
+.settings/
+
+# Build and binary files
+build/
+release/
+bin/
+*.pyc
+*.so
+*.o
