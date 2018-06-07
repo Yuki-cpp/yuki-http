@@ -1,6 +1,6 @@
 #pragma once
-//Conveniencd include
 
+//Convenience include
 #include "request.hpp"
 #include "mime.hpp"
 
