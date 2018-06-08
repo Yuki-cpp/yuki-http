@@ -4,7 +4,7 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 project(yukihttp VERSION 1.0.0 LANGUAGES CXX)
 
 
-add_library(yukihttp SHARED src/request.cpp src/mime.cpp src/mime_part.cpp src/slist_wrapper.cpp src/utils.cpp)
+add_library(yukihttp SHARED src/request.cpp src/mime.cpp src/mime_part.cpp src/slist_wrapper.cpp src/utils.cpp src/mime_wrapper.cpp)
 
 target_compile_features(yukihttp PRIVATE cxx_std_17)
 target_compile_options(yukihttp PRIVATE -Wall -Wextra -Wpedantic -Wunused-parameter -Wunreachable-code)

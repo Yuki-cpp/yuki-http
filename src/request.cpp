@@ -11,7 +11,7 @@
 #include "slist_wrapper.hpp"
 #include "utils.hpp"
 #include "mime_part.hpp"
-
+#include "mime_wrapper.hpp"
 
 
 namespace
@@ -200,12 +200,12 @@ yuki::http::response yuki::http::request::DELETE() const
 yuki::http::response yuki::http::request::POST(const yuki::http::mime& mime_data) const
 {
 	curl_easy_setopt(m_handle, CURLOPT_POST, 1L);
-	auto curl_mime_data = curl_mime_init(m_handle);
+	yuki::http::mime_wrapper curl_mime_data(m_handle);
 	for(auto& part : mime_data.m_parts)
 	{
-		part->set_up_handle(curl_mime_data);
+		part->set_up_handle(curl_mime_data.get_handle());
 	}
-	curl_easy_setopt(m_handle, CURLOPT_MIMEPOST, curl_mime_data);
+	curl_easy_setopt(m_handle, CURLOPT_MIMEPOST, curl_mime_data.get_handle());
 	return execute_request();
 }
 
