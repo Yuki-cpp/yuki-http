@@ -41,7 +41,7 @@ std::size_t write_callback(void *data, std::size_t size, std::size_t nmemb, void
 	yuki::http::response* r;
 	const auto total_size = nmemb * size;
 	r = reinterpret_cast<yuki::http::response*>(userdata);
-	r->body = std::string(reinterpret_cast<char*>(data), total_size);
+	r->body += std::string(reinterpret_cast<char*>(data), total_size);
 	return (total_size);
 }
 
@@ -60,7 +60,7 @@ std::size_t header_callback(void *data, std::size_t size, std::size_t nmemb, voi
 	if ( std::string::npos == sep_index )
 	{
 		trim(header);
-		if (0 == header.length())
+		if (header == "")
 		{
 			return (total_size);
 		}

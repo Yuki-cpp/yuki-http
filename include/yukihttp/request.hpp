@@ -17,8 +17,8 @@ class mime;
 
 struct response
 {
-	int code;
-	std::string body;
+	int code = 0;
+	std::string body = "";
 	yuki::http::headers_t headers;
 };
 
