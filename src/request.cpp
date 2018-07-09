@@ -195,7 +195,7 @@ yuki::http::response yuki::http::request::POST(const std::string & data ) const
 
 	if(data != "")
 	{
-		curl_easy_setopt(m_handle, CURLOPT_POSTFIELDS, data.c_str());
+		curl_easy_setopt(m_handle, CURLOPT_POSTFIELDS, data.data());
 		curl_easy_setopt(m_handle, CURLOPT_POSTFIELDSIZE, data.size());
 	}
 	return execute_request();
