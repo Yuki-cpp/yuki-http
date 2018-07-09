@@ -44,6 +44,9 @@ public:
 
 	void set_user_agent(const std::string & ua) const;
 
+	void set_auth_username(const std::string & username) const;
+	void set_auth_password(const std::string & password) const;
+
 	void set_header(const std::string & name, const std::string & value);
 
 	yuki::http::response GET() const;

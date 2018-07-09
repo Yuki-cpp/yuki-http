@@ -118,6 +118,18 @@ void yuki::http::request::set_user_agent(const std::string& ua) const
 }
 
 
+void yuki::http::request::set_auth_username(const std::string& username) const
+{
+	curl_easy_setopt(m_handle, CURLOPT_USERNAME, username.c_str());
+}
+
+void yuki::http::request::set_auth_password(const std::string& password) const
+{
+	curl_easy_setopt(m_handle, CURLOPT_PASSWORD, password.c_str());
+}
+
+
+
 
 void yuki::http::request::set_header(const std::string& name, const std::string& value)
 {
