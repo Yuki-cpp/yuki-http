@@ -198,10 +198,10 @@ yuki::http::response yuki::http::request::execute_request() const
 	
 	yuki::http::response rep;
 
-	curl_easy_setopt(m_handle, CURLOPT_WRITEFUNCTION, write_callback);
+	curl_easy_setopt(m_handle, CURLOPT_WRITEFUNCTION, yuki::http::callbacks::write_callback);
 	curl_easy_setopt(m_handle, CURLOPT_WRITEDATA, &rep);
 
-	curl_easy_setopt(m_handle, CURLOPT_HEADERFUNCTION, header_callback);
+	curl_easy_setopt(m_handle, CURLOPT_HEADERFUNCTION, yuki::http::callbacks::header_callback);
 	curl_easy_setopt(m_handle, CURLOPT_HEADERDATA, &rep);
 
 
