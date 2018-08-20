@@ -25,6 +25,11 @@ target_link_libraries(yukihttp
         ${CURL_LIBRARIES}
 )
 
+find_package(Boost REQUIRED)
+target_link_libraries(yukihttp
+    PRIVATE
+        ${Boost_LIBRARIES}
+)
 
 # Installation instructions
 include(GNUInstallDirs)

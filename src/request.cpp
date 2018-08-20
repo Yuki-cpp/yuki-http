@@ -17,22 +17,50 @@
 namespace
 {
 
-int set_progress_callback_impl(void *clientp,   curl_off_t dltotal,   curl_off_t dlnow,   curl_off_t ultotal,   curl_off_t ulnow)
+
+/**
+* @brief ...
+*
+* @param provided_callback p_provided_callback:...
+* @param expected_download p_expected_download:...
+* @param downloaded p_downloaded:...
+* @param expected_upload p_expected_upload:...
+* @param uploaded p_uploaded:...
+* @return int
+*/
+int set_progress_callback_impl(void * provided_callback,   curl_off_t expected_download,   curl_off_t downloaded,   curl_off_t expected_upload,   curl_off_t uploaded)
 {
-	yuki::http::progress_callback* callback = reinterpret_cast<yuki::http::progress_callback*>(clientp);
-	(*callback)(dlnow, dltotal, ulnow, ultotal);
-	return 0;
+	if(provided_callback)
+	{
+		auto* callback = reinterpret_cast<yuki::http::progress_callback*>(provided_callback);
+		(*callback)(downloaded, expected_download, uploaded, expected_upload);
+		return 0;
+	}
+
+	return -1;
 }
 
 
-int set_verbose_output_impl(CURL*, curl_infotype, char *data, size_t size, void *userptr)
+/**
+* @brief ...
+*
+* @param handle p_handle:...
+* @param type p_type:...
+* @param data p_data:...
+* @param size p_size:... Defaults to maybe_unused.
+* @param debug_callback p_debug_callback:... Defaults to maybe_unused.
+* @return int
+*/
+int set_verbose_output_impl(CURL* handle [[maybe_unused]], curl_infotype type [[maybe_unused]], char *data, size_t size, void *debug_callback)
 {
-	std::ostream* out = reinterpret_cast<std::ostream*>(userptr);
-	const std::string out_str(data, size);
-	(*out) << out_str;
+	if(debug_callback and data)
+	{
+		auto* out = reinterpret_cast<std::ostream*>(debug_callback);
+		const std::string out_str(data, size);
+		(*out) << out_str;
+	}
 	return 0;
 }
-
 
 
 }
@@ -49,13 +77,17 @@ yuki::http::request::request(const std::string & url):
 		throw std::runtime_error("Can't init cURL");
 	}
 
-
 	if(curl_easy_setopt(m_handle, CURLOPT_URL, url.c_str()) != CURLE_OK)
 	{
 		throw std::runtime_error("Can't set URL");
 	}
-	curl_easy_setopt(m_handle, CURLOPT_FOLLOWLOCATION, 1L);
+
+	if(curl_easy_setopt(m_handle, CURLOPT_FOLLOWLOCATION, 1L) != CURLE_OK)
+	{
+		throw std::runtime_error("HTTP not supported");
+	}
 }
+
 
 yuki::http::request::~request()
 {
@@ -67,10 +99,9 @@ yuki::http::request::~request()
 
 
 
-
 void yuki::http::request::set_verbose(bool is_verbose) const
 {
-	const long value = is_verbose ? 1l : 0l;
+	const auto value = is_verbose ? 1l : 0l;
 	curl_easy_setopt(m_handle, CURLOPT_VERBOSE, value);
 }
 
@@ -85,13 +116,9 @@ void yuki::http::request::set_verbose_output(std::ostream& out) const
 
 
 
-
-
-
-
 void yuki::http::request::enable_progress_meter(bool is_enabled) const
 {
-	const long value = is_enabled ? 0l : 1l;
+	const auto value = is_enabled ? 0l : 1l;
 	curl_easy_setopt(m_handle, CURLOPT_NOPROGRESS, value);
 }
 
@@ -104,28 +131,40 @@ void yuki::http::request::set_progress_callback(yuki::http::progress_callback& c
 
 
 
+
+
 void yuki::http::request::set_timeout(unsigned int ms) const
 {
 	curl_easy_setopt(m_handle, CURLOPT_TIMEOUT_MS, ms);
 }
 
 
-
-
 void yuki::http::request::set_user_agent(const std::string& ua) const
 {
-	curl_easy_setopt(m_handle, CURLOPT_USERAGENT, ua.c_str());
+	if(curl_easy_setopt(m_handle, CURLOPT_USERAGENT, ua.c_str()) != CURLE_OK)
+	{
+		throw std::runtime_error("HTTP not supported");
+	}
 }
+
+
 
 
 void yuki::http::request::set_auth_username(const std::string& username) const
 {
-	curl_easy_setopt(m_handle, CURLOPT_USERNAME, username.c_str());
+	if(curl_easy_setopt(m_handle, CURLOPT_USERNAME, username.c_str()) != CURLE_OK)
+	{
+		throw std::runtime_error("Username setting not supported");
+	}
 }
+
 
 void yuki::http::request::set_auth_password(const std::string& password) const
 {
-	curl_easy_setopt(m_handle, CURLOPT_PASSWORD, password.c_str());
+	if( curl_easy_setopt(m_handle, CURLOPT_PASSWORD, password.c_str()) != CURLE_OK)
+	{
+		throw std::runtime_error("Password setting not supported");
+	}
 }
 
 
@@ -142,16 +181,21 @@ void yuki::http::request::set_header(const std::string& name, const std::string&
 yuki::http::response yuki::http::request::execute_request() const
 {
 	curl_slist_wrapper m_curl_headers;
-	for(auto & it : m_headers_map)
+	for(const auto & it : m_headers_map)
 	{
-		const std::string header = it.first + ": " + it.second;
+		const auto header = it.first + ": " + it.second;
 		m_curl_headers.append(header);
 	}
+	
 	auto header_list = m_curl_headers.get_list();
 	if(header_list)
 	{
-		curl_easy_setopt(m_handle, CURLOPT_HTTPHEADER, header_list);
+		if(	curl_easy_setopt(m_handle, CURLOPT_HTTPHEADER, header_list) != CURLE_OK)
+		{
+			throw std::runtime_error("HTTP not supported");
+		}
 	}
+	
 	yuki::http::response rep;
 
 	curl_easy_setopt(m_handle, CURLOPT_WRITEFUNCTION, write_callback);
@@ -168,16 +212,24 @@ yuki::http::response yuki::http::request::execute_request() const
 	}
 	else
 	{
-		curl_easy_getinfo(m_handle, CURLINFO_RESPONSE_CODE , &rep.code);
+		if(curl_easy_getinfo(m_handle, CURLINFO_RESPONSE_CODE , &rep.code) != CURLE_OK)
+		{
+			throw std::runtime_error("Response code not supported");
+		}
 	}
 
 	return rep;
 }
 
 
+
+
 yuki::http::response yuki::http::request::GET() const
 {
-	curl_easy_setopt(m_handle, CURLOPT_HTTPGET, 1L);
+	if(curl_easy_setopt(m_handle, CURLOPT_HTTPGET, 1L) != CURLE_OK)
+	{
+		throw std::runtime_error("HTTP not supported");
+	}
 	return execute_request();
 }
 
@@ -191,12 +243,18 @@ yuki::http::response yuki::http::request::HEAD() const
 
 yuki::http::response yuki::http::request::POST(const std::string & data ) const
 {
-	curl_easy_setopt(m_handle, CURLOPT_POST, 1L);
+	if(curl_easy_setopt(m_handle, CURLOPT_POST, 1L) != CURLE_OK)
+	{
+		throw std::runtime_error("HTTP not supported");
+	}
 
 	if(data != "")
 	{
 		curl_easy_setopt(m_handle, CURLOPT_POSTFIELDS, data.data());
-		curl_easy_setopt(m_handle, CURLOPT_POSTFIELDSIZE, data.size());
+		if(curl_easy_setopt(m_handle, CURLOPT_POSTFIELDSIZE, data.size()) != CURLE_OK)
+		{
+			throw std::runtime_error("HTTP not supported");
+		}
 	}
 	return execute_request();
 }
@@ -204,7 +262,10 @@ yuki::http::response yuki::http::request::POST(const std::string & data ) const
 
 yuki::http::response yuki::http::request::DELETE() const
 {
-	curl_easy_setopt(m_handle, CURLOPT_CUSTOMREQUEST, "DELETE");
+	if(curl_easy_setopt(m_handle, CURLOPT_CUSTOMREQUEST, "DELETE") != CURLE_OK)
+	{
+		throw std::runtime_error("DELETE not supported");
+	}
 	return execute_request();
 }
 

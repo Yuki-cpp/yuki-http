@@ -6,8 +6,6 @@
 
 #include "mime_part.hpp"
 
-yuki::http::mime::mime() = default;
-yuki::http::mime::~mime() = default;
 
 void yuki::http::mime::add_data_part(const std::string & name, const std::string& data)
 {

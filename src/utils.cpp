@@ -1,80 +1,96 @@
 #include "utils.hpp"
 
-
 #include <string>
 #include <algorithm>
+
+#include <boost/algorithm/string.hpp>
 
 #include "yukihttp/request.hpp"
 
 
-namespace
+std::size_t write_callback(void *data, std::size_t size [[maybe_unused]], std::size_t data_size, void *user_data)
 {
-
-std::string &left_trim(std::string & s)
-{
-	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](char c)
+	if(data and user_data)
 	{
-		return not std::isspace(c);
-	}));
-	return s;
+		yuki::http::response* response = reinterpret_cast<yuki::http::response*>(user_data);
+		response->body += std::string(reinterpret_cast<char*>(data), data_size);
+		return (data_size);
+	}
+	return 0;
 }
 
-std::string &right_trim(std::string & s)
+
+std::size_t header_callback(void *data, std::size_t size, std::size_t data_size, void *user_data)
 {
-	s.erase(std::find_if(s.rbegin(), s.rend(), [](char c)
+	if(data and user_data)
 	{
-		return not std::isspace(c);
-	}).base(), s.end());
-	return s;
-}
+		const auto total_size = data_size * size;
 
-std::string &trim(std::string & s)
-{
-	return left_trim(right_trim(s));
-}
+		std::string header_line(reinterpret_cast<char*>(data), total_size);
+		boost::algorithm::trim(header_line);
 
-}
-
-
-std::size_t write_callback(void *data, std::size_t size, std::size_t nmemb, void *userdata)
-{
-	yuki::http::response* r;
-	const auto total_size = nmemb * size;
-	r = reinterpret_cast<yuki::http::response*>(userdata);
-	r->body += std::string(reinterpret_cast<char*>(data), total_size);
-	return (total_size);
-}
-
-
-std::size_t header_callback(void *data, std::size_t size, std::size_t nmemb, void *userdata)
-{
-	yuki::http::response* r;
-	r = reinterpret_cast<yuki::http::response*>(userdata);
-
-	const auto total_size = nmemb * size;
-	std::string header(reinterpret_cast<char*>(data), total_size);
-
-
-
-	std::size_t sep_index = header.find_first_of(':');
-	if ( std::string::npos == sep_index )
-	{
-		trim(header);
-		if (header == "")
+		if(header_line == "")
 		{
-			return (total_size);
+			return total_size;
 		}
-		r->headers[header] = "present";
-	}
-	else
-	{
-		std::string key = header.substr(0, sep_index);
-		trim(key);
-		std::string value = header.substr(sep_index + 1);
-		trim(value);
-		r->headers[key] = value;
-	}
 
-	return (total_size);
+		std::string header_key = header_line;
+		std::string header_value = "";
+
+		const auto separator_index = header_line.find_first_of(':');
+		if(separator_index != std::string::npos)
+		{
+			header_key = boost::algorithm::trim_copy(header_line.substr(0, separator_index));
+			header_value = boost::algorithm::trim_copy(header_line.substr(separator_index + 1));
+		}
+
+		yuki::http::response* response = reinterpret_cast<yuki::http::response*>(user_data);
+		response->headers[header_key] = header_value;
+
+		return (total_size);
+	}
+	return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
